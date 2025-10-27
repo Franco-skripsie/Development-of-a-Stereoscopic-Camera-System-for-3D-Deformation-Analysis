@@ -5,20 +5,6 @@ Live Dot Detection Tuner
 A real-time GUI application for tuning blob detection parameters on calibration images.
 Allows interactive adjustment of detection parameters with immediate visual feedback.
 
-Required packages:
-pip install opencv-python numpy matplotlib tkinter
-
-Usage:
-    cd "/home/francodp/camera_app/1_Dot identification and sorting/Route to completion_DotIdentifier" && python3 live_dot_tuner.py --image "/home/francodp/camera_app/calib/right008.png"
-
-Features:
-- Real-time parameter adjustment with sliders
-- Live preview of detected dots
-- Parameter value display
-- Export final parameters
-- Save detection results
-
-Author: Generated for Raspberry Pi 5 stereo camera calibration
 """
 
 import cv2
