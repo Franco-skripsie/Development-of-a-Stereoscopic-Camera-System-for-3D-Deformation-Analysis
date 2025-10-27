@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-3D Dot Pattern Stereo Calibration - Method 2
+3D Dot Pattern Stereo Calibration
 ============================================
 
 This script performs stereo camera calibration using a 3D calibration plate
@@ -14,8 +14,6 @@ Grid Configuration:
 - Missing dot in Grid A at column 12, row 2
 - Total: 264 dots with known 3D positions
 
-Author: Camera Calibration System
-Date: 2025-10-01
 """
 
 import cv2
