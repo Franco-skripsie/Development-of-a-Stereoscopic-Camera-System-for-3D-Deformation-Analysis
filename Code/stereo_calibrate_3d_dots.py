@@ -314,86 +314,124 @@ def main():
         print("Saving calibration results...")
         
         # Save as NPZ file
-        np.savez(os.path.join(output_dir, "stereo_calib_3d_single.npz"),
+        np.savez(os.path.join(output_dir, "3d_plate_stereo_calib.npz"),
                  cameraMatrix1=mtx_left, distCoeffs1=dist_left,
                  cameraMatrix2=mtx_right, distCoeffs2=dist_right,
                  R=R, T=T, E=E, F=F, R1=R1, R2=R2, P1=P1, P2=P2, Q=Q,
                  baseline_mm=baseline, rms_error=ret_stereo,
                  image_used=img_num, method="3D_dots_single_image")
         
+        # Save as JSON file (human-readable)
+        calib_dict = {
+            "method": "3D_dots_single_image",
+            "image_used": img_num,
+            "rms_error": float(ret_stereo),
+            "baseline_mm": float(baseline),
+            "left_camera": {
+                "camera_matrix": mtx_left.tolist(),
+                "distortion_coeffs": dist_left.flatten().tolist(),
+                "focal_lengths": {"fx": float(mtx_left[0,0]), "fy": float(mtx_left[1,1])},
+                "principal_point": {"cx": float(mtx_left[0,2]), "cy": float(mtx_left[1,2])}
+            },
+            "right_camera": {
+                "camera_matrix": mtx_right.tolist(),
+                "distortion_coeffs": dist_right.flatten().tolist(),
+                "focal_lengths": {"fx": float(mtx_right[0,0]), "fy": float(mtx_right[1,1])},
+                "principal_point": {"cx": float(mtx_right[0,2]), "cy": float(mtx_right[1,2])}
+            },
+            "stereo": {
+                "rotation_matrix": R.tolist(),
+                "translation_vector": T.flatten().tolist(),
+                "essential_matrix": E.tolist(),
+                "fundamental_matrix": F.tolist()
+            }
+        }
+        
+        with open(os.path.join(output_dir, "3d_plate_stereo_calib.json"), "w") as f:
+            json.dump(calib_dict, f, indent=4)
+        
+        # Calculate validation errors
+        # Calculate mean reprojection error per camera
+        left_errors = []
+        right_errors = []
+        
+        for i, (obj_pts, left_pts, right_pts) in enumerate(zip(objpoints, imgpoints_left, imgpoints_right)):
+            # Reproject for left camera
+            rvec_l, tvec_l = cv2.solvePnP(obj_pts, left_pts, mtx_left, dist_left)[:2]
+            proj_left, _ = cv2.projectPoints(obj_pts, rvec_l, tvec_l, mtx_left, dist_left)
+            left_error = cv2.norm(left_pts, proj_left.reshape(-1, 2), cv2.NORM_L2) / len(obj_pts)
+            left_errors.append(left_error)
+            
+            # Reproject for right camera
+            rvec_r, tvec_r = cv2.solvePnP(obj_pts, right_pts, mtx_right, dist_right)[:2]
+            proj_right, _ = cv2.projectPoints(obj_pts, rvec_r, tvec_r, mtx_right, dist_right)
+            right_error = cv2.norm(right_pts, proj_right.reshape(-1, 2), cv2.NORM_L2) / len(obj_pts)
+            right_errors.append(right_error)
+        
+        left_mean_error = np.mean(left_errors)
+        right_mean_error = np.mean(right_errors)
+        overall_mean_error = (left_mean_error + right_mean_error) / 2
+        
+        # Calculate baseline improvement (comparing to initial estimate if available)
+        improvement = 0  # Single image doesn't have improvement metric
+        
         # Save detailed report
-        report = f"""
-=== 3D DOT PATTERN STEREO CALIBRATION REPORT (SINGLE IMAGE) ===
+        report = f"""=== 3D PLATE STEREO CALIBRATION RESULTS ===
 
-Method: 3D Calibration Plate with Pre-Identified White Dots
-Date: {os.popen('date').read().strip()}
-
-Configuration:
-- Grid A depth: {GRID_A_DEPTH}mm (behind Grid B)
-- Grid B depth: {GRID_B_DEPTH}mm (reference)
-- Expected dots: {EXPECTED_TOTAL}
+CALIBRATION DATA:
+- Total correspondences: {len(combined_3d_points)} points
+- Grid A (Z={GRID_A_DEPTH}mm): {EXPECTED_DOTS_A} points
+- Grid B (Z={GRID_B_DEPTH}mm): {EXPECTED_DOTS_B} points
 - Dot spacing: {DOT_SPACING}mm
-- Grid A: {GRID_A_ROWS}×{GRID_A_COLS}-1 = {EXPECTED_DOTS_A} dots
-- Grid B: {GRID_B_ROWS}×{GRID_B_COLS} = {EXPECTED_DOTS_B} dots
-- Missing dot: column {GRID_A_MISSING_COL}, row {GRID_A_MISSING_ROW}
 
-Data Source:
-- Image used: {img_num}
-- Using pre-processed .npy dot identification files
-- Perfect dot correspondence by array index
-- No geometric matching required
+CALIBRATION QUALITY:
+- RMS reprojection error: {ret_stereo:.4f} pixels
+- Final baseline: {baseline:.2f}mm
+- Baseline calibration RMS: {ret_stereo:.4f} pixels
+- Improvement: {improvement:.4f} pixels
 
-Calibration Results:
-- Image pair used: {img_num}
-- Calibration points: {len(combined_3d_points)} per image
-- Left camera RMS error: {ret_left:.3f} pixels
-- Right camera RMS error: {ret_right:.3f} pixels
-- Stereo calibration RMS error: {ret_stereo:.3f} pixels
-- Baseline distance: {baseline:.2f}mm
+VALIDATION ERRORS:
+- Left camera mean error: {left_mean_error:.10f}px
+- Right camera mean error: {right_mean_error:.4f}px
+- Overall mean error: {overall_mean_error:.10f}px
 
-Left Camera Parameters:
-- Focal lengths (fx, fy): {mtx_left[0,0]:.1f}, {mtx_left[1,1]:.1f}
-- Principal point (cx, cy): {mtx_left[0,2]:.1f}, {mtx_left[1,2]:.1f}
-- Distortion coefficients: [{', '.join([f'{d:.4f}' for d in dist_left.flatten()])}]
+FINAL CAMERA PARAMETERS:
 
-Right Camera Parameters:
-- Focal lengths (fx, fy): {mtx_right[0,0]:.1f}, {mtx_right[1,1]:.1f}
-- Principal point (cx, cy): {mtx_right[0,2]:.1f}, {mtx_right[1,2]:.1f}
-- Distortion coefficients: [{', '.join([f'{d:.4f}' for d in dist_right.flatten()])}]
+Left Camera:
+- Focal lengths: fx={mtx_left[0,0]:.1f}, fy={mtx_left[1,1]:.1f}
+- Principal point: cx={mtx_left[0,2]:.1f}, cy={mtx_left[1,2]:.1f}
+- Distortion: k1={dist_left[0,0]:.4f}, k2={dist_left[0,1]:.4f}, p1={dist_left[0,2]:.4f}, p2={dist_left[0,3]:.4f}, k3={dist_left[0,4]:.4f}
 
-Quality Assessment:
-- RMS Error < 1.0 pixels: {'✓' if ret_stereo < 1.0 else '✗'} (relaxed for single image)
-- Baseline reasonable: {'✓' if 100 < baseline < 200 else '✗'}
+Right Camera:
+- Focal lengths: fx={mtx_right[0,0]:.1f}, fy={mtx_right[1,1]:.1f}
+- Principal point: cx={mtx_right[0,2]:.1f}, cy={mtx_right[1,2]:.1f}
+- Distortion: k1={dist_right[0,0]:.4f}, k2={dist_right[0,1]:.4f}, p1={dist_right[0,2]:.4f}, p2={dist_right[0,3]:.4f}, k3={dist_right[0,4]:.4f}
 
-Files Generated:
-- stereo_calib_3d_single.npz: Calibration parameters
-- calibration_report_3d_single.txt: This detailed report
+Stereo Parameters:
+- Translation: [{T[0,0]:.6f}, {T[1,0]:.6f}, {T[2,0]:.6f}] meters
+- Baseline: {baseline:.2f}mm
 
-Advantages of This Method:
-- Perfect dot correspondence (no matching errors)
-- True 3D calibration with depth information
-- High precision with {len(combined_3d_points)} calibration points
-- Fast testing and validation
-
-Recommendations:
-- Use this for initial testing and validation
-- For production, capture multiple image pairs at different positions/angles
-- Multiple images provide more robust calibration parameters
+FILES GENERATED:
+- 3d_plate_stereo_calib.npz: NumPy format
+- 3d_plate_stereo_calib.json: JSON format (human-readable)
+- 3d plate calibration report.txt: This report
 """
         
-        with open(os.path.join(output_dir, "calibration_report_3d_single.txt"), "w") as f:
+        with open(os.path.join(output_dir, "3d plate calibration report.txt"), "w") as f:
             f.write(report)
         
-        print("\n✓ 3D Dot Pattern Single Image Calibration Complete!")
+        print("\n✓ 3D Plate Stereo Calibration Complete!")
         print(f"📁 Results saved in: {output_dir}/")
-        print(f"📊 RMS Error: {ret_stereo:.3f} pixels")
-        print(f"📏 Baseline: {baseline:.1f}mm")
+        print(f"📊 RMS Error: {ret_stereo:.4f} pixels")
+        print(f"📏 Baseline: {baseline:.2f}mm")
         print(f"🎯 Image used: {img_num}")
-        print(f"📝 Note: Single image calibration - use multiple images for production")
+        print(f"📝 Total points: {len(combined_3d_points)}")
         
     except Exception as e:
         print(f"\n✗ Calibration failed: {e}")
         print("Check that dot identification files are valid and accessible")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()
