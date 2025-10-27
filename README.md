@@ -1,6 +1,11 @@
 # Development of a Stereoscopic Camera System for 3D Deformation Analysis
 
-This repository contains the hardware designs and software for a custom stereoscopic (stereo) camera system designed for 3D deformation analysis. The system uses two Raspberry Pi Camera Module 3 units synchronized to capture stereo image pairs, which can be used to compute depth information and analyze 3D deformation.
+This repository contains the hardware designs (CAD) and software for a custom stereoscopic camera system designed for 3D deformation analysis. The system uses two synchronized Raspberry Pi Camera Module 3 units to capture stereo image pairs, which can be used to compute depth information and analyze 3D deformation.
+
+## Project Report
+This repository supports the Mechatronic Project 478 final report. For a complete understanding of the project's background, design methodology, hardware selection, software algorithms, and full results, please read the complete PDF report.
+
+View the Full Project Report `25866095-DuPlessis.pdf`
 
 ## Table of Contents
 
@@ -65,7 +70,7 @@ The `Code/` directory contains Python scripts for the complete stereo vision pip
    - Standard stereo calibration using chessboard pattern
    - Individual camera intrinsic calibration
    - Stereo extrinsic calibration (rotation & translation)
-   - Outputs multiple formats: NPZ, YAML, JSON
+   - Outputs multiple formats: NPZ & JSON
    - Generates detailed calibration reports
 
 3. **`stereo_calibrate_3d_dots.py`**
@@ -105,7 +110,7 @@ The `Code/` directory contains Python scripts for the complete stereo vision pip
 ### Hardware Requirements
 - Raspberry Pi 5 (or compatible)
 - 2× Raspberry Pi Camera Module 3
-- SD card (32GB+ recommended)
+- Raspberry Pi SSD Kit (Recommended)
 - Calibration patterns (printed or displayed)
 
 ### Software Requirements
@@ -168,7 +173,7 @@ python3 stereo_calibration_collector.py
 - `q` - Quit
 
 **Tips:**
-- Capture 15-25 image pairs at different angles and distances
+- Capture 20-30 image pairs at different angles and distances
 - Ensure the calibration pattern is clearly visible in both cameras
 - Use the crosshair for alignment
 - Vary the position and orientation of the pattern
@@ -186,7 +191,7 @@ This will:
 - Calibrate individual camera intrinsics
 - Compute stereo extrinsic parameters (R, T)
 - Generate rectification matrices
-- Save calibration data: `stereo_calib.npz`, `stereo_calib.yaml`, `stereo_calib.json`
+- Save calibration data: `stereo_calib.npz`, `stereo_calib.json`
 - Create `calibration_report.txt` with detailed results
 
 ### 3. 3D Dot Pattern Calibration
@@ -272,24 +277,24 @@ OUTPUT_DIR = "results"                     # Output directory
 Development-of-a-Stereoscopic-Camera-System-for-3D-Deformation-Analysis/
 │
 ├── Code/                                    # Python software
-│   ├── stereo_calibration_collector.py     # Image capture tool
-│   ├── stereo_calibrate.py                 # Chessboard calibration
-│   ├── stereo_calibrate_3d_dots.py         # 3D dot pattern calibration
-│   ├── dot_identifier.py                   # Dot detection and sorting
-│   ├── live_dot_tuner.py                   # Interactive parameter tuning
-│   └── simple_stereo_rectify.py            # Rectification and disparity
+│   ├── stereo_calibration_collector.py      # Image capture tool
+│   ├── stereo_calibrate.py                  # Chessboard calibration
+│   ├── stereo_calibrate_3d_dots.py          # 3D dot pattern calibration
+│   ├── dot_identifier.py                    # Dot detection and sorting
+│   ├── live_dot_tuner.py                    # Interactive parameter tuning
+│   └── simple_stereo_rectify.py             # Rectification and disparity
 │
 ├── Camera Enclosure/                        # 3D printable camera housings
-│   ├── Camera_Backplate.ipt                # Camera mounting backplate
-│   ├── Camera_Enclosure_Left.ipt           # Left camera enclosure
-│   └── Camera_Enclosure_Right.ipt          # Right camera enclosure
+│   ├── Camera_Backplate.ipt                 # Camera mounting backplate
+│   ├── Camera_Enclosure_Left.ipt            # Left camera enclosure
+│   └── Camera_Enclosure_Right.ipt           # Right camera enclosure
 │
 ├── RPi5 Enclosure/                          # Raspberry Pi 5 enclosure
-│   ├── RPi5_Enclosure_Bottom.ipt           # Bottom enclosure part
-│   └── RPi5_Enclosure_Top.ipt              # Top enclosure part
+│   ├── RPi5_Enclosure_Bottom.ipt            # Bottom enclosure part
+│   └── RPi5_Enclosure_Top.ipt               # Top enclosure part
 │
 ├── Base to Mounting Rail Connector/         # Mounting hardware
-│   └── Base_Mounting_Rail_Connector.ipt    # Rail mounting connector
+│   └── Base_Mounting_Rail_Connector.ipt     # Rail mounting connector
 │
 └── README.md                                # This file
 ```
@@ -300,7 +305,7 @@ Development-of-a-Stereoscopic-Camera-System-for-3D-Deformation-Analysis/
 
 ### Chessboard Pattern
 - **Size:** 9×6 inner corners
-- **Square Size:** 14.5mm
+- **Square Size:** 15mm
 - **Purpose:** Standard stereo calibration
 - **Usage:** Print on flat, rigid surface or display on screen
 
@@ -328,7 +333,7 @@ Development-of-a-Stereoscopic-Camera-System-for-3D-Deformation-Analysis/
 
 2. **Capture Calibration Images**
    - Use `stereo_calibration_collector.py`
-   - Capture 15-25 chessboard image pairs
+   - Capture 20-30 chessboard image pairs
    - Optionally capture custom 3D dot pattern images
 
 3. **Perform Calibration**
@@ -379,7 +384,7 @@ Development-of-a-Stereoscopic-Camera-System-for-3D-Deformation-Analysis/
 
 ## Contributing
 
-Contributions are welcome! This is a research project, and improvements to the calibration algorithms, hardware designs, or documentation are appreciated.
+Contributions are welcome. This is an open-source academic project, and improvements to the calibration algorithms, hardware designs, or documentation are appreciated. Please feel free to fork the repository, make changes, and open a pull request.
 
 ### How to Contribute:
 1. Fork the repository
@@ -399,7 +404,7 @@ Contributions are welcome! This is a research project, and improvements to the c
 
 ## License
 
-This project is part of academic research. Please contact the repository owner for licensing information.
+This project is licensed under the MIT License. See the (`LICENSE.md`) file for details.
 
 ## Acknowledgments
 
@@ -408,10 +413,6 @@ This stereoscopic camera system was developed for 3D deformation analysis resear
 - Custom 3D calibration patterns for improved accuracy
 - Raspberry Pi Camera Module 3 for high-resolution imaging
 - OpenCV for computer vision processing
-
-## Contact
-
-For questions, issues, or collaboration opportunities, please open an issue on GitHub or contact the repository maintainer.
 
 ---
 
