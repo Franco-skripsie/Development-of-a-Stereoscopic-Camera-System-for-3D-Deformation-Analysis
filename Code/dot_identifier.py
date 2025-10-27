@@ -14,10 +14,6 @@ with 264 white dots on a black background. The calibration plate has:
 The script detects all dots, clusters them into columns, assigns them to grids,
 and outputs ordered point arrays for stereo calibration.
 
-Usage:
-    python3 dot_identifier.py --image test_cam0_1.jpg
-
-Author: Generated for Raspberry Pi 5 stereo camera calibration
 """
 
 import cv2
