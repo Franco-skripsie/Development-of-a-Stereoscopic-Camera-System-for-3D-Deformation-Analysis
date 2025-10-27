@@ -197,46 +197,6 @@ print(f"\n{'✓' if fx_diff < 2 and fy_diff < 2 else '⚠️'} Focal length matc
 print(f"{'✓' if cx_diff < 2 and cy_diff < 2 else '⚠️'} Principal point match: {'Excellent' if cx_diff < 2 and cy_diff < 2 else 'Acceptable' if cx_diff < 5 and cy_diff < 5 else 'Poor'}")
 print(f"{'✓' if k1_diff < 20 and k2_diff < 20 else '⚠️'} Distortion match: {'Good' if k1_diff < 20 and k2_diff < 20 else 'Different lenses'}")
 
-# === Interpret Rotation Matrix ===
-print("\n=== ROTATION ANALYSIS ===")
-
-# Method 1: Rotation angle (axis-angle representation)
-rotation_vector, _ = cv2.Rodrigues(R)
-rotation_angle = np.linalg.norm(rotation_vector) * 180 / np.pi
-rotation_axis = rotation_vector.flatten() / np.linalg.norm(rotation_vector)
-
-print(f"Total rotation angle: {rotation_angle:.2f}°")
-print(f"Rotation axis (unit vector): [{rotation_axis[0]:.3f}, {rotation_axis[1]:.3f}, {rotation_axis[2]:.3f}]")
-
-# Method 2: Euler angles (more intuitive)
-# Extract rotation around X, Y, Z axes
-sy = np.sqrt(R[0,0]**2 + R[1,0]**2)
-singular = sy < 1e-6
-
-if not singular:
-    x_angle = np.arctan2(R[2,1], R[2,2]) * 180 / np.pi  # Roll
-    y_angle = np.arctan2(-R[2,0], sy) * 180 / np.pi     # Pitch
-    z_angle = np.arctan2(R[1,0], R[0,0]) * 180 / np.pi  # Yaw
-else:
-    x_angle = np.arctan2(-R[1,2], R[1,1]) * 180 / np.pi
-    y_angle = np.arctan2(-R[2,0], sy) * 180 / np.pi
-    z_angle = 0
-
-print(f"\nEuler angles (rotation around each axis):")
-print(f"  Roll  (X-axis): {x_angle:+.2f}° {'⚠️' if abs(x_angle) > 3 else '✓'}")
-print(f"  Pitch (Y-axis): {y_angle:+.2f}° {'⚠️' if abs(y_angle) > 3 else '✓'}")
-print(f"  Yaw   (Z-axis): {z_angle:+.2f}° {'⚠️' if abs(z_angle) > 3 else '✓'}")
-
-print(f"\nCamera alignment quality:")
-if rotation_angle < 2:
-    print("  ✓ Excellent: Cameras are very well aligned")
-elif rotation_angle < 5:
-    print("  ✓ Good: Cameras are acceptably aligned")
-elif rotation_angle < 10:
-    print("  ⚠️ Moderate: Some misalignment present")
-else:
-    print("  ⚠️ Poor: Significant misalignment detected")
-
 # === Rectification ===
 R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(
     cameraMatrix1, distCoeffs1,
@@ -336,34 +296,12 @@ Right Camera Parameters:
 - Principal point (cx, cy): {cameraMatrix2[0,2]:.1f}, {cameraMatrix2[1,2]:.1f}
 - Distortion coefficients: [{', '.join([f'{d:.4f}' for d in distCoeffs2.flatten()])}]
 
-Percentage Differences (Left vs Right):
-- fx: {fx_diff:.2f}%
-- fy: {fy_diff:.2f}%
-- cx: {cx_diff:.2f}%
-- cy: {cy_diff:.2f}%
-- k1 (radial distortion): {k1_diff:.2f}%
-- k2 (radial distortion): {k2_diff:.2f}%
-- k3 (radial distortion): {k3_diff:.2f}%
-
 Stereo Geometry:
-- Translation: [{', '.join([f'{t:.3f}' for t in T.flatten()])}] (meters)
-- Total rotation angle: {rotation_angle:.2f} degrees
-- Rotation breakdown:
-  * Roll  (X-axis): {x_angle:+.2f}°
-  * Pitch (Y-axis): {y_angle:+.2f}°
-  * Yaw   (Z-axis): {z_angle:+.2f}°
-
-Quality Assessment:
-- RMS Error < 0.5 pixels: {'✓' if retval < 0.5 else '✗'}
-- Reasonable focal lengths: {'✓' if 1000 < cameraMatrix1[0,0] < 5000 else '✗'}
-- Principal point near center: {'✓' if abs(cameraMatrix1[0,2] - grayL.shape[1]/2) < 200 else '✗'}
-- Focal length match (<2%): {'✓' if fx_diff < 2 and fy_diff < 2 else '✗'}
-- Principal point match (<2%): {'✓' if cx_diff < 2 and cy_diff < 2 else '✗'}
-- Camera alignment < 5°: {'✓' if rotation_angle < 5 else '✗'}
+- Translation vector (T): [{', '.join([f'{t:.3f}' for t in T.flatten()])}]
+- Rotation angles: {np.linalg.norm(cv2.Rodrigues(R)[0]) * 180 / np.pi:.2f} degrees
 
 Files Generated:
-- stereo_calib.npz: NumPy format (recommended for Python)
-- stereo_calib.yaml: OpenCV format (standard)
+- stereo_calib.npz: NumPy format 
 - stereo_calib.json: JSON format (human-readable)
 - calibration_report.txt: This report
 """
@@ -377,7 +315,6 @@ print(f"✓ Baseline distance: {baseline:.1f}mm")
 print("✓ Files saved:")
 print("  - stereo_calib.npz (NumPy format)")
 print("  - stereo_calib.yaml (OpenCV format)")
-print("  - stereo_calib.json (JSON format)")
 print("  - calibration_report.txt (detailed report)")
 
 
